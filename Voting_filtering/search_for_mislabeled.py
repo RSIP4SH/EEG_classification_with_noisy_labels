@@ -31,15 +31,13 @@ for tr_ind, val_ind in cv.split(X_train, y_train):
 epochs=2
 dropouts = (0.2, 0.4, 0.6)
 for fold in fold_pairs:
-    print(y_tr.shape)
     X_tr, y_tr, X_val, y_val = fold[0], to_categorical(fold[1]), fold[2], to_categorical(fold[3])
-
     model, _ = get_model(X_tr.shape[1], X_tr.shape[2], dropouts=dropouts)
     callback = LossMetricHistory(n_iter=epochs, validation_data=(X_val, y_val), verbose=1)
     test_history = model.fit(X_tr, y_tr, epochs=epochs,
                             validation_data=(X_val, y_val), callbacks=[callback],
                             batch_size=64, shuffle=True)
-    
+
 
 # Noise cleaning
 pass

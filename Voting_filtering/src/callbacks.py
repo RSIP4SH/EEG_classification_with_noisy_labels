@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import shutil
 import numpy as np
+from numpy import argmax, max
 import logging
 from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -20,6 +21,10 @@ class LossMetricHistory(Callback):
         self.fname_last = fname_lastmodel
         if self.x_val is not None and self.y_val is not None:
             self.validate = True
+            if self.y_val.ndim==2 and self.y_val.shape[1]==2:
+                self.y_val_bin = argmax(self.y_val,1)
+            else:
+                self.y_val_bin = self.y_val
         else:
             self.validate = False
         self.verbose = verbose
@@ -55,10 +60,12 @@ class LossMetricHistory(Callback):
         if self.validate:
             self.val_losses.append(logs.get('val_loss'))
             self.val_accs.append(logs.get('val_acc'))
-            self.y_pred = self.model.predict_proba(self.x_val, verbose=0)
-            self.aucs.append(roc_auc_score(self.y_val, self.y_pred))
+            self.y_pred = self.model.predict(self.x_val, verbose=0)
+            if self.y_pred.ndim==2 and self.y_pred.shape[1]==2:
+                self.y_pred = max(self.y_pred,1)
+            self.aucs.append(roc_auc_score(self.y_val_bin, self.y_pred))
 
-            FPR, TPR, thresholds = roc_curve(self.y_val, self.y_pred)
+            FPR, TPR, thresholds = roc_curve(self.y_val_bin, self.y_pred)
             self.sens.append(TPR)
             self.spc.append(1 - FPR)
             self.thresholds.append(thresholds)
