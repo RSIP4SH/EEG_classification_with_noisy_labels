@@ -1,4 +1,7 @@
 .idea/*
 .ipynb_checkpoints
 *.pyc
-logs
+logs/*
+sample_data/*
+!sample_data/33
+!sample_data/34
