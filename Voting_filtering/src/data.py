@@ -1,9 +1,10 @@
+from __future__ import print_function
 from scipy.io import loadmat
 import os
 import numpy as np
 import pickle
 from random import shuffle,seed
-from StringIO import StringIO
+#from StringIO import StringIO
 from scipy.signal import resample
 
 def to_onehot(labels):
@@ -119,4 +120,4 @@ class DataBuildClassifier(Data):
 if __name__ == '__main__':
     data = DataBuildClassifier('/home/likan_blk/BCI/NewData/').get_data([33],shuffle=True,
                                                                                windows=[(0.2, 0.5)],baseline_window=(0.2, 0.3))
-    print 1
+    print(1)
