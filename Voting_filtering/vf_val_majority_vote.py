@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 # Data import and making train, test and validation sets
-sbjs = [33,34] #[25,26,27,28,29,30,32,33,34,35,36,37,38]
+sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
 path_to_data = '/home/likan_blk/BCI/NewData/' # os.path.join(os.pardir,'sample_data')
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                     windows=[(0.2, 0.5)],
@@ -25,7 +25,7 @@ with open(fname, 'w') as fout:
     fout.write('subject,auc_noisy,auc_pure,samples_before,samples_after,epoch_number\n')
 
 
-epochs=2
+epochs = 150
 dropouts = (0.2, 0.4, 0.6)
 n_shufflings = 5 # number of different splits on train and val (in cross-validation)
 
