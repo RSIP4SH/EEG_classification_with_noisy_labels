@@ -63,7 +63,7 @@ for sbj in sbjs:
                                      verbose=1, fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(i)))
             hist = model.fit(X_tr, y_tr, epochs=epochs,
                             validation_data=(X_val, y_val), callbacks=[callback],
-                            batch_size=64, shuffle=True)
+                            batch_size=64, shuffle=False)
             bestepochs = np.append(bestepochs, callback.bestepoch+1)
 
             # Validation and data cleaning
@@ -90,7 +90,7 @@ for sbj in sbjs:
 
     model_noisy, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
     model_noisy.fit(X_train, y_train, epochs=bestepoch,
-                    batch_size=64, shuffle=True)
+                    batch_size=64, shuffle=False)
 
     y_pred_noisy = model_noisy.predict(X_test)
     y_pred_noisy = y_pred_noisy[:, 1]
@@ -98,7 +98,7 @@ for sbj in sbjs:
 
     model_pure, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
     model_pure.fit(X_train, y_train, epochs=bestepoch,
-                   batch_size=64, shuffle=True)
+                   batch_size=64, shuffle=False)
     y_pred_pure = model_pure.predict(X_test)
     y_pred_pure = y_pred_pure[:, 1]
     auc_pure = roc_auc_score(y_test, y_pred_pure)
