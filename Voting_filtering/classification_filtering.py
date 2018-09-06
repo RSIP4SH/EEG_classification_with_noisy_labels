@@ -20,10 +20,10 @@ data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
 logdir = os.path.join(os.getcwd(),'logs', 'cf')
 if not os.path.isdir(logdir):
     os.mkdir(logdir)
-fname = os.path.join(logdir, 'auc_scores.csv')
+fname = os.path.join(logdir, 'auc_scores_0.8.csv')
 with open(fname, 'w') as fout:
     fout.write('subject,auc_noisy,auc_pure,samples_before,samples_after,epoch_number\n')
-fname_err_ind = os.path.join(logdir, 'err_indices.csv')
+fname_err_ind = os.path.join(logdir, 'err_indices0.8.csv')
 with open(fname_err_ind, 'w') as fout:
     fout.write('subject,class,indices\n')
 
@@ -72,7 +72,7 @@ for sbj in sbjs:
         y_pred = model.predict(X_val)[:,1]
         # Indices of non-noisy samples
         for j, ind in enumerate(val_inds[i]):
-            if np.abs(y[ind] - y_pred[j]) < 0.5:
+            if np.abs(y[ind] - y_pred[j]) < 0.8:
                 pure_ind.append(ind)
             # OPTIONALLY: let's save indices of erroneous samples for each class separately
             # in order to look at this data after all.
