@@ -4,7 +4,8 @@ import operator
 from sklearn.model_selection import train_test_split
 import numpy as np
 import os
-
+import csv
+from sklearn.metrics import roc_curve, roc_auc_score
 
 # def loging(history,title):
 #     fig = plt.figure()
@@ -172,6 +173,100 @@ def plot_EEG(data, logdir, ind, timewin = (0.2,0.5)):
             plt.savefig(os.path.join(logdir, '%sch%ssbj.png' % (channel, sbj)))
             plt.clf()
             plt.cla()
+
+def hist_deviations(fname, dirname, word='',threshold=None):
+    '''
+    Plotting histograms of deviations of classifier predictions
+     from the true labels for each of the two classes for each subjec
+    :param fname: name of the .csv file of deviations
+    :param dirname: name of directory where to save histograms
+    :param word: optional, str, additional word to name the resulting histograms. It will be added to the beginning of file name
+    :param threshold: optional, if not None - plotting a vertical line x = threshold
+    :return: None
+    '''
+    if word != '':
+        word += '_'
+
+    with open(fname, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        deviations = dict()
+        for row in csv_reader:
+            if i != 0:
+                deviations[row[0]] = map(float, row[1:])
+            i += 1
+    for sbj in deviations.keys():
+        deviations[sbj] = np.array(deviations[sbj])
+        pred_T = deviations[sbj][deviations[sbj] > 0]
+        pred_NT = np.abs(deviations[sbj][deviations[sbj] < 0])
+        plt.title('Histogram of classifier deviation for %s subject' % (sbj))
+        plt.xlabel('|True label - Predicted probability|')
+        plt.ylabel('number of samples')
+        plt.xlim(xmin=0, xmax=1)
+        bins = np.arange(0, 1.04, 0.1)
+        plt.xticks(bins)
+        plt.hist(pred_T, bins=bins,
+                 rwidth=0.8, color='#191970', label='target class')
+        plt.hist(pred_NT, bins=bins,
+                 rwidth=0.8, color='#FF1493', label='non-target class', alpha=0.4)
+        if threshold is not None:
+            plt.axvline(x=threshold, color='grey')
+        plt.legend()
+        plt.savefig(os.path.join(dirname, word+"deviations%s.png"%sbj))
+        plt.clf()
+        plt.cla()
+
+def roc_curve_and_auc(fname_true, fname_pred, dir_auc, dir_roc, word=''):
+    '''
+    Plot ROC curves and count ROC AUCs
+    :param fname_true: str, name of file with true labels for each subject dataset
+    :param fname_pred: str, name of file with predictions for each subject dataset
+    :param dir_auc: str, name of directory where to put AUC scores
+    :param dir_roc: str, name of directory where to put ROC curve plots
+    :param word: optional, str, additional word to name the resulting files. It will be added to the beginning of file name
+    :return: None
+    '''
+    if word != '':
+        word += '_'
+
+    with open(fname_true, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        y_true = dict()
+        for row in csv_reader:
+            if i != 0:
+                y_true[row[0]] = map(float, row[1:])
+            i += 1
+    with open(fname_pred, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        y_pred = dict()
+        for row in csv_reader:
+            if i != 0:
+                y_pred[row[0]] = map(float, row[1:])
+            i += 1
+    with open(os.path.join(dir_auc, word+'aucs.csv'), 'w') as fout:
+        fout.write('subject,aucs\n')
+    aucs = {}
+
+    for sbj in y_true.keys():
+        y_true[sbj] = np.array(y_true[sbj])
+        y_pred[sbj] = np.array(y_pred[sbj])
+
+        aucs[sbj] = roc_auc_score(y_true[sbj], y_pred[sbj])
+        with open(os.path.join(dir_auc, word + 'aucs.csv'), 'a') as fout:
+            fout.write('%s,%s\n'%(sbj,aucs[sbj]))
+
+        FPR, TPR, _ = roc_curve(y_true[sbj], y_pred[sbj])
+        plt.title('Roc curve for %s subject' % (sbj))
+        plt.xlabel('FPR')
+        plt.ylabel('TPR')
+        plt.xlim(xmin=0, xmax=1)
+        plt.plot(FPR, TPR)
+        plt.plot(np.array([0,1]), np.array([0,1]), color='grey')
+        plt.savefig(os.path.join(dir_roc, word+'roc%s.png'%sbj))
+        plt.clf()
+        plt.cla()
 
 
 
