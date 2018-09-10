@@ -26,7 +26,7 @@ from keras.models import load_model
 
 # Data import and making train, test and validation sets
 sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
-path_to_data = '/home/likan_blk/BCI/NewData/'  # os.path.join(os.pardir,'sample_data')
+path_to_data = os.path.join(os.pardir,'sample_data') #'/home/likan_blk/BCI/NewData/'  #
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
                                                   baseline_window=(0.2, 0.3))
@@ -118,7 +118,7 @@ for sbj in sbjs:
     for fold in fold_pairs:
         X_tr, y_tr, X_val, y_val = fold[0], to_categorical(fold[1]), fold[2], to_categorical(fold[3])
         model, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
-        callback = LossMetricHistory(n_iter=epochs, validation_data=(X_val, y_val),
+        callback = LossMetricHistory(n_iter=epochs,
                                      verbose=1, fname_bestmodel=os.path.join(logdir,"model%s_%s.hdf5"%(sbj,i)))
         hist = model.fit(X_tr, y_tr, epochs=epochs,
                         validation_data=(X_val, y_val), callbacks=[callback],

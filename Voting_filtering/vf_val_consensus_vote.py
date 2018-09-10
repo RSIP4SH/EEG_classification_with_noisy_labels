@@ -59,8 +59,8 @@ for sbj in sbjs:
         for fold in fold_pairs:
             X_tr, y_tr, X_val, y_val = fold[0], to_categorical(fold[1]), fold[2], to_categorical(fold[3])
             model, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
-            callback = LossMetricHistory(n_iter=epochs, validation_data=(X_val, y_val),
-                                     verbose=1, fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(i)))
+            callback = LossMetricHistory(n_iter=epochs,verbose=1,
+                                         fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(i)))
             hist = model.fit(X_tr, y_tr, epochs=epochs,
                             validation_data=(X_val, y_val), callbacks=[callback],
                             batch_size=64, shuffle=False)

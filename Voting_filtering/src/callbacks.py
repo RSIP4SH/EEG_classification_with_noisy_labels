@@ -9,8 +9,90 @@ from numpy import argmax, max
 import logging
 from sklearn.metrics import roc_auc_score, roc_curve
 
+class LossMetricHistory(Callback):
+    def __init__(self, n_iter, verbose=1,
+                 fname_bestmodel=None, fname_lastmodel=None):
+        super(LossMetricHistory, self).__init__()
+        self.n_iter = n_iter
+        self.fname_best = fname_bestmodel
+        self.fname_last = fname_lastmodel
+        self.verbose = verbose
+
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(logging.INFO)
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(message)s")
+        console.setFormatter(formatter)
+        if len(self.logger.handlers) > 0:
+            self.logger.handlers = []
+        self.logger.addHandler(console)
+
+    def on_train_begin(self, logs={}):
+        if self.verbose > 0:
+            self.logger.info("Training began")
+        self.losses = []
+        self.val_losses = []
+        self.accs = []  # accuracy scores
+        self.val_accs = []  # validation accuracy scores
+        self.aucs = []  # validation ROC AUC scores
+        self.sens = []  # validation sensitivity (or True Positive Rate) scores
+        self.spc = []  # validation specificity scores
+        self.thresholds = []  # Decreasing thresholds used to compute specificity and sensitivity
+
+        self.maxauc = 0
+        self.bestepoch = 0
+
+    def on_epoch_end(self, epoch, logs={}):
+        self.losses.append(logs.get('loss'))
+        self.accs.append(logs.get('acc'))
+        if self.validation_data is not None:
+            self.val_losses.append(logs.get('val_loss'))
+            self.val_accs.append(logs.get('val_acc'))
+            self.y_pred = self.model.predict(self.validation_data[0], verbose=0)#self.y_pred = self.model.predict(self.x_val, verbose=0)
+            if self.y_pred.ndim==2 and self.y_pred.shape[1]==2:
+                self.y_pred = max(self.y_pred,1)
+            if self.validation_data[1].ndim==2 and self.validation_data[1].shape[1]==2:
+                self.aucs.append(roc_auc_score(argmax(self.validation_data[1],1), self.y_pred))
+                FPR, TPR, thresholds = roc_curve(argmax(self.validation_data[1],1), self.y_pred)
+            else:
+                self.aucs.append(roc_auc_score(self.validation_data[1], self.y_pred))
+                FPR, TPR, thresholds = roc_curve(self.validation_data[1], self.y_pred)
+            self.sens.append(TPR)
+            self.spc.append(1 - FPR)
+            self.thresholds.append(thresholds)
+
+            if self.aucs[-1] > self.maxauc:
+                self.maxauc = self.aucs[-1]
+                self.bestepoch = epoch
+                if self.fname_best is not None:
+                    self.model.save(self.fname_best)
+
+            if self.verbose > 0:
+                self.logger.info("Epoch %d/%d: train loss = %.6f, test loss = %.6f" % (epoch + 1, self.n_iter,
+                                                                                       self.losses[-1],
+                                                                                       self.val_losses[-1]) +
+                                 "\n\tacc = %.6f, test acc = %.6f" % (self.accs[-1], self.val_accs[-1]) +
+                                 "\n\tauc = %.6f" % (self.aucs[-1]))
+        elif self.verbose > 0:
+            self.logger.info("Epoch %d/%d results: train loss = %.6f" % (epoch + 1, self.n_iter, self.losses[-1]) +
+                             "\n\t\t\tacc = %.6f" % (self.accs[-1]))
+
+    def on_train_end(self, logs={}):
+        self.losses = np.array(self.losses)
+        if self.validation_data is not None:
+            self.val_losses = np.array(self.val_losses)
+            self.scores = {}
+            self.scores['auc'] = np.array(self.aucs)
+            self.scores['acc'] = np.array(self.val_accs)
+            self.scores['sens'] = np.array(self.sens)
+            self.scores['spc'] = np.array(self.spc)
+            self.scores['thresholds'] = np.array(self.thresholds)
+        if self.fname_last is not None:
+            self.model.save(self.fname_last)
 
 
+'''
 class LossMetricHistory(Callback):
     def __init__(self, n_iter, validation_data=(None, None), verbose=1,
                  fname_bestmodel=None, fname_lastmodel=None):
@@ -98,9 +180,7 @@ class LossMetricHistory(Callback):
             self.scores['thresholds'] = np.array(self.thresholds)
         if self.fname_last is not None:
             self.model.save(self.fname_last)
-
-
-
+'''
 class PerSubjAucMetricHistory(Callback):
     """
     This callback for testing model on each subject separately during training. It writes auc for every subject to the
