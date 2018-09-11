@@ -22,8 +22,8 @@ from sklearn.model_selection import StratifiedKFold
 from keras.utils import to_categorical
 from keras.models import load_model
 # Data import and making train, test and validation sets
-sbjs = [25,26]#,27,28,29,30,32,33,34,35,36,37,38]
-path_to_data = os.path.join(os.pardir,'sample_data') #'/home/likan_blk/BCI/NewData/'  #
+sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
+path_to_data = '/home/likan_blk/BCI/NewData/'  #os.path.join(os.pardir,'sample_data')
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
                                                   baseline_window=(0.2, 0.3))
@@ -42,7 +42,7 @@ fname_tpreds = os.path.join(logdir, 'test_predictions.csv')
 fname_ttrue = os.path.join(logdir, 'test_true_labels.csv')
 fname_tdev = os.path.join(logdir, 'test_deviations.csv')
 fname_tind = os.path.join(logdir, 'test_indices.csv')
-fname_tauc = os.path.join(logdir, 'test_aucs.csv')
+fname_tauc = os.path.join(logdir, 'test_aucs_dynamics.csv')
 fname_tloss = os.path.join(logdir, 'test_loss.csv')
 
 with open(fname_preds, 'w') as fout:
@@ -78,7 +78,7 @@ with open(fname_loss, 'w') as fout:
 with open(fname_tloss, 'w') as fout:
     fout.write('subject,loss\n')
 
-epochs = 2#150
+epochs = 150
 dropouts = (0.2, 0.4, 0.6)
 
 # Iterate over subjects to train and test models separately
@@ -108,7 +108,22 @@ for sbj in sbjs:
     with open(fname_loss, 'a') as fout:
         fout.write('%s,'%sbj)
 
+    with open(fname_tpreds, 'a') as fout:
+        fout.write('%s,'%sbj)
+
+    with open(fname_ttrue, 'a') as fout:
+        fout.write('%s,'%sbj)
+
+    with open(fname_tdev, 'a') as fout:
+        fout.write('%s,'%sbj)
+
+    with open(fname_tind, 'a') as fout:
+        fout.write('%s,'%sbj)
+
     with open(fname_tloss, 'a') as fout:
+        fout.write('%s,'%sbj)
+
+    with open(fname_tauc, 'a') as fout:
         fout.write('%s,'%sbj)
 
     bestepochs = np.array([])
@@ -184,8 +199,8 @@ remove_commas(fname_loss)
 remove_commas(fname_tloss)
 
 # Read result files and plot histograms, roc curves, AUCs and losses
-#hist_deviations(fname_dev, os.path.join(logdir, 'hist'))
-#hist_deviations(fname_tdev, os.path.join(logdir, 'hist'), word='test')
+hist_deviations(fname_dev, os.path.join(logdir, 'hist'))
+hist_deviations(fname_tdev, os.path.join(logdir, 'hist'), word='test')
 roc_curve_and_auc(fname_true, fname_preds, logdir, os.path.join(logdir, 'roc'))
 roc_curve_and_auc(fname_ttrue, fname_tpreds, logdir, os.path.join(logdir, 'roc'), word='test')
 plot_losses(fname_loss, fname_tloss, os.path.join(logdir,'loss'))
