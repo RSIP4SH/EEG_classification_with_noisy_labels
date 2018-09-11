@@ -21,10 +21,9 @@ from src.NN import get_model
 from sklearn.model_selection import StratifiedKFold
 from keras.utils import to_categorical
 from keras.models import load_model
-
 # Data import and making train, test and validation sets
-sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
-path_to_data = '/home/likan_blk/BCI/NewData/'  # os.path.join(os.pardir,'sample_data')
+sbjs = [25,26]#,27,28,29,30,32,33,34,35,36,37,38]
+path_to_data = os.path.join(os.pardir,'sample_data') #'/home/likan_blk/BCI/NewData/'  #
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
                                                   baseline_window=(0.2, 0.3))
@@ -37,13 +36,14 @@ fname_preds = os.path.join(logdir, 'train_predictions.csv')
 fname_true = os.path.join(logdir, 'train_true_labels.csv')
 fname_dev = os.path.join(logdir, 'train_deviations.csv')
 fname_ind = os.path.join(logdir, 'train_indices.csv')
-fname_auc = os.path.join(logdir, 'train_aucs.csv')
+fname_loss = os.path.join(logdir, 'train_loss.csv')
 
 fname_tpreds = os.path.join(logdir, 'test_predictions.csv')
 fname_ttrue = os.path.join(logdir, 'test_true_labels.csv')
 fname_tdev = os.path.join(logdir, 'test_deviations.csv')
 fname_tind = os.path.join(logdir, 'test_indices.csv')
 fname_tauc = os.path.join(logdir, 'test_aucs.csv')
+fname_tloss = os.path.join(logdir, 'test_loss.csv')
 
 with open(fname_preds, 'w') as fout:
     fout.write('subject,predictions\n')
@@ -69,13 +69,16 @@ with open(fname_tdev, 'w') as fout:
 with open(fname_tind, 'w') as fout:
     fout.write('subject,indices\n')
 
-if not os.path.isdir(os.path.join(logdir,'roc')):
-    os.makedirs(os.path.join(logdir,'roc'))
+with open(fname_tauc, 'w') as fout:
+    fout.write('subject,aucs\n')
 
-if not os.path.isdir(os.path.join(logdir,'hist')):
-    os.makedirs(os.path.join(logdir,'hist'))
+with open(fname_loss, 'w') as fout:
+    fout.write('subject,loss\n')
 
-epochs = 150
+with open(fname_tloss, 'w') as fout:
+    fout.write('subject,loss\n')
+
+epochs = 2#150
 dropouts = (0.2, 0.4, 0.6)
 
 # Iterate over subjects to train and test models separately
@@ -102,12 +105,19 @@ for sbj in sbjs:
     with open(fname_ind, 'a') as fout:
         fout.write('%s,'%sbj)
 
+    with open(fname_loss, 'a') as fout:
+        fout.write('%s,'%sbj)
+
+    with open(fname_tloss, 'a') as fout:
+        fout.write('%s,'%sbj)
+
     bestepochs = np.array([])
     model, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
-    callback = LossMetricHistory(n_iter=epochs, validation_data=(X_test, y_test),
+    callback = LossMetricHistory(n_iter=epochs,
                                  verbose=1, fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(sbj)))
+    print(y_train.shape, y_test.shape, X_train.shape, X_test.shape)
     hist = model.fit(X_train, to_categorical(y_train), epochs=epochs,
-                    validation_data=(X_test, y_test), callbacks=[callback],
+                    validation_data=(X_test, to_categorical(y_test)), callbacks=[callback],
                     batch_size=64, shuffle=True)
     bestepoch = callback.bestepoch + 1
 
@@ -119,12 +129,15 @@ for sbj in sbjs:
     with open(fname_preds, 'a') as fout:
         fout.write(','.join(map(str, list(y_pred_train))))
         fout.write('\n')
+
     with open(fname_true, 'a') as fout:
         fout.write(','.join(map(str, list(y_train))))
         fout.write('\n')
+
     with open(fname_dev, 'a') as fout:
         fout.write(','.join(map(str, list(y_train - y_pred_train))))
         fout.write('\n')
+
     with open(fname_ind, 'a') as fout:
         fout.write(','.join(map(str, train_ind)))
         fout.write('\n')
@@ -144,8 +157,20 @@ for sbj in sbjs:
     with open(fname_tind, 'a') as fout:
         fout.write(','.join(map(str, test_ind)))
         fout.write('\n')
-# TODO: add losses and auc dynamics plots
-###
+
+    with open(fname_tauc, 'a') as fout:
+        fout.write(','.join(map(str, list(callback.scores['auc']))))
+        fout.write('\n')
+
+    with open(fname_loss, 'a') as fout:
+        fout.write(','.join(map(str, list(callback.losses))))
+        fout.write('\n')
+
+    with open(fname_tloss, 'a') as fout:
+        fout.write(','.join(map(str, list(callback.val_losses))))
+        fout.write('\n')
+
+
 remove_commas(fname_preds)
 remove_commas(fname_true)
 remove_commas(fname_dev)
@@ -154,9 +179,14 @@ remove_commas(fname_tpreds)
 remove_commas(fname_ttrue)
 remove_commas(fname_tdev)
 remove_commas(fname_tind)
+remove_commas(fname_tauc)
+remove_commas(fname_loss)
+remove_commas(fname_tloss)
 
-# Read result files and plot histograms and roc curves
-hist_deviations(fname_dev, os.path.join(logdir, 'hist'))
-hist_deviations(fname_tdev, os.path.join(logdir, 'hist'), word='test')
+# Read result files and plot histograms, roc curves, AUCs and losses
+#hist_deviations(fname_dev, os.path.join(logdir, 'hist'))
+#hist_deviations(fname_tdev, os.path.join(logdir, 'hist'), word='test')
 roc_curve_and_auc(fname_true, fname_preds, logdir, os.path.join(logdir, 'roc'))
 roc_curve_and_auc(fname_ttrue, fname_tpreds, logdir, os.path.join(logdir, 'roc'), word='test')
+plot_losses(fname_loss, fname_tloss, os.path.join(logdir,'loss'))
+plot_auc(fname_tauc, os.path.join(logdir, 'aucs'))

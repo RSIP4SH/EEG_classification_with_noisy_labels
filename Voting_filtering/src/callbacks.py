@@ -44,8 +44,11 @@ class LossMetricHistory(Callback):
         self.bestepoch = 0
 
     def on_epoch_end(self, epoch, logs={}):
+        # Count loss and accuracy on the training data
         self.losses.append(logs.get('loss'))
         self.accs.append(logs.get('acc'))
+
+        # Count ROC AUC, loss and accuracy on the validation data
         if self.validation_data is not None:
             self.val_losses.append(logs.get('val_loss'))
             self.val_accs.append(logs.get('val_acc'))

@@ -174,16 +174,18 @@ def plot_EEG(data, logdir, ind, timewin = (0.2,0.5)):
             plt.clf()
             plt.cla()
 
-def hist_deviations(fname, dirname, word='',threshold=None):
+def hist_deviations(fname, dir_hist, word='',threshold=None):
     '''
     Plotting histograms of deviations of classifier predictions
      from the true labels for each of the two classes for each subjec
     :param fname: name of the .csv file of deviations
-    :param dirname: name of directory where to save histograms
+    :param dir_hist: name of directory where to save histograms
     :param word: optional, str, additional word to name the resulting histograms. It will be added to the beginning of file name
     :param threshold: optional, if not None - plotting a vertical line x = threshold
     :return: None
     '''
+    if not os.path.isdir(dir_hist):
+        os.makedirs(dir_hist)
     if word != '':
         word += '_'
 
@@ -226,6 +228,10 @@ def roc_curve_and_auc(fname_true, fname_pred, dir_auc, dir_roc, word=''):
     :param word: optional, str, additional word to name the resulting files. It will be added to the beginning of file name
     :return: None
     '''
+    if not os.path.isdir(dir_auc):
+        os.makedirs(dir_auc)
+    if not os.path.isdir(dir_roc):
+        os.makedirs(dir_roc)
     if word != '':
         word += '_'
 
@@ -264,9 +270,81 @@ def roc_curve_and_auc(fname_true, fname_pred, dir_auc, dir_roc, word=''):
         plt.xlim(xmin=0, xmax=1)
         plt.plot(FPR, TPR)
         plt.plot(np.array([0,1]), np.array([0,1]), color='grey')
-        plt.savefig(os.path.join(dir_roc, word+'roc%s.png'%sbj))
+        plt.savefig(os.path.join(dir_roc, '%sroc%s.png'%(word,sbj)))
         plt.clf()
         plt.cla()
+
+def plot_auc(fname, dir_plots, word=''):
+    if not os.path.isdir(dir_plots):
+        os.makedirs(dir_plots)
+    if word != '':
+        word += '_'
+
+    with open(fname, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        aucs = dict()
+        for row in csv_reader:
+            if i != 0:
+               aucs[row[0]] = map(float, row[1:])
+            i += 1
+
+    for sbj in aucs.keys():
+        aucs[sbj] = np.array(aucs[sbj])
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.title('ROC AUC dynamics for %s subject' % (sbj))
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('AUC')
+        ax.set_xlim(left=0, right=1)
+        ax.plot(np.arange(1,len(aucs[sbj])+1), aucs[sbj])
+        xmax = np.argmax(aucs[sbj])
+        ymax = aucs[xmax]
+        xmax += 1 # Epoch numbers begin with 1
+        ax.plot(xmax, ymax, 'ro')
+        ax.annotate('(%s,%s)'%(xmax,ymax), xy=(xmax, ymax))
+        ax.plot([1, xmax], [ymax, ymax], '--', color='grey')
+        ax.plot([xmax, xmax], [0, ymax], '--', color='grey')
+        fig.savefig(os.path.join(dir_plot, '%sauc%s.png'%(word,sbj)))
+        ax.cla()
+        fig.clf()
+
+def plot_losses(fname1, fname2, dir_plots):
+    if not os.path.isdir(dir_plots):
+        os.makedirs(dir_plots)
+    if word != '':
+        word += '_'
+
+    with open(fname1, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        trloss = dict()
+        for row in csv_reader:
+            if i != 0:
+               trloss[row[0]] = map(float, row[1:])
+            i += 1
+    with open(fname2, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        tsloss = dict()
+        for row in csv_reader:
+            if i != 0:
+               tsloss[row[0]] = map(float, row[1:])
+            i += 1
+
+    for sbj in trloss.keys():
+        trloss[sbj] = np.array(trloss[sbj])
+        tsloss[sbj] = np.array(tsloss[sbj])
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.title('Loss function dynamics for %s subject' % (sbj))
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Loss')
+        ax.plot(np.arange(1,len(trloss[sbj])+1), trloss[sbj], label='train loss')
+        ax.plot(np.arange(1,len(tsloss[sbj])+1), tsloss[sbj], label='test loss')
+        fig.savefig(os.path.join(dir_plot, 'loss%s.png'%sbj))
+        ax.cla()
+        fig.clf()
 
 
 
