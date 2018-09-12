@@ -51,11 +51,11 @@ def get_model(time_samples_num,channels_num,dropouts):
 
     #Fourth
     flatten = Flatten()(dropouted)
-    out = Dense(2,activation=None)(flatten)
-    out = Activation(activation='softmax')(out)
+    out = Dense(1,activation='sigmoid')(flatten) #out = Dense(2,activation=None)(flatten)
+    #out = Activation(activation='softmax')(out)
     classification_model = Model(inputs=input,outputs=out)
     opt = Adam(lr=0.005)
-    classification_model.compile(optimizer=opt,loss='categorical_crossentropy',metrics=['accuracy'])
+    classification_model.compile(optimizer=opt,loss='binary_crossentropy',metrics=['accuracy'])
 
     tsne_model = Model(inputs=input,outputs=flatten)
     return classification_model, tsne_model

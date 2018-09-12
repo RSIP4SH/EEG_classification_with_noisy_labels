@@ -13,7 +13,6 @@ test roc plots (roc/test_roc*),
 histograms of deviations (hist/*)
 
 """
-
 from src.utils import *
 from src.callbacks import LossMetricHistory
 from src.data import DataBuildClassifier
@@ -21,6 +20,8 @@ from src.NN import get_model
 from sklearn.model_selection import StratifiedKFold
 from keras.utils import to_categorical
 from keras.models import load_model
+
+
 # Data import and making train, test and validation sets
 sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
 path_to_data = '/home/likan_blk/BCI/NewData/'  #os.path.join(os.pardir,'sample_data')
@@ -28,7 +29,7 @@ data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
                                                   baseline_window=(0.2, 0.3))
 # Some files for logging
-logdir = os.path.join(os.getcwd(),'logs', 'cf', 'simple_training')
+logdir = os.path.join(os.getcwd(),'logs', 'cf', 'simple_training_noSM','less_dropout')
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
 
@@ -79,7 +80,7 @@ with open(fname_tloss, 'w') as fout:
     fout.write('subject,loss\n')
 
 epochs = 150
-dropouts = (0.2, 0.4, 0.6)
+dropouts = (0.1, 0.2, 0.4)
 
 # Iterate over subjects to train and test models separately
 for sbj in sbjs:
@@ -130,16 +131,15 @@ for sbj in sbjs:
     model, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
     callback = LossMetricHistory(n_iter=epochs,
                                  verbose=1, fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(sbj)))
-    print(y_train.shape, y_test.shape, X_train.shape, X_test.shape)
-    hist = model.fit(X_train, to_categorical(y_train), epochs=epochs,
-                    validation_data=(X_test, to_categorical(y_test)), callbacks=[callback],
+    hist = model.fit(X_train, y_train, epochs=epochs,
+                    validation_data=(X_test, y_test), callbacks=[callback],
                     batch_size=64, shuffle=True)
     bestepoch = callback.bestepoch + 1
 
     # Testing and saving predictions
     model = load_model(os.path.join(logdir, "model%s.hdf5"%(sbj)))
-    y_pred_test = model.predict(X_test)[:,1]
-    y_pred_train = model.predict(X_train)[:,1]
+    y_pred_test = model.predict(X_test)[:,0]
+    y_pred_train = model.predict(X_train)[:,0]
 
     with open(fname_preds, 'a') as fout:
         fout.write(','.join(map(str, list(y_pred_train))))
