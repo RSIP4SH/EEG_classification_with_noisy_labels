@@ -274,6 +274,7 @@ def roc_curve_and_auc(fname_true, fname_pred, dir_auc, dir_roc, word=''):
         plt.clf()
         plt.cla()
 
+
 def plot_auc(fname, dir_plots, word=''):
     if not os.path.isdir(dir_plots):
         os.makedirs(dir_plots)
@@ -307,6 +308,7 @@ def plot_auc(fname, dir_plots, word=''):
         fig.savefig(os.path.join(dir_plots, '%sauc%s.png'%(word,sbj)))
         ax.cla()
         fig.clf()
+
 
 def plot_losses(fname1, fname2, dir_plots):
     if not os.path.isdir(dir_plots):
@@ -342,6 +344,74 @@ def plot_losses(fname1, fname2, dir_plots):
         plt.legend()
         fig.savefig(os.path.join(dir_plots, 'loss%s.png'%sbj))
         ax.cla()
+        fig.clf()
+
+
+def plot_loss_auc(fname_auc, fname_loss, fname_tloss, dir_plots):
+    if not os.path.isdir(dir_plots):
+        os.makedirs(dir_plots)
+
+    with open(fname_auc, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        aucs = dict()
+        for row in csv_reader:
+            if i != 0:
+                aucs[row[0]] = map(float, row[1:])
+            i += 1
+    with open(fname_loss, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        trloss = dict()
+        for row in csv_reader:
+            if i != 0:
+                trloss[row[0]] = map(float, row[1:])
+            i += 1
+    with open(fname_tloss, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        i = 0
+        tsloss = dict()
+        for row in csv_reader:
+            if i != 0:
+                tsloss[row[0]] = map(float, row[1:])
+            i += 1
+    for sbj in aucs.keys():
+        fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(7, 8))
+        ax1.set_title('AUC for %s subject' % sbj)
+        ax2.set_title('Loss for %s subject' % sbj)
+
+        aucs[sbj] = np.array(aucs[sbj])
+        trloss[sbj] = np.array(trloss[sbj])
+        tsloss[sbj] = np.array(tsloss[sbj])
+
+        ax1.set_xlabel('Epoch')
+        ax2.set_xlabel('Epoch')
+        ax1.set_ylabel('AUC')
+        ax2.set_ylabel('Loss')
+
+        ax1.plot(np.arange(1, len(aucs[sbj]) + 1), aucs[sbj])
+        xmax = np.argmax(aucs[sbj])
+        ymax = aucs[sbj][xmax]
+        xmax += 1  # Epoch numbers begin with 1
+        ax1.plot(xmax, ymax, 'ro')
+        ax1.annotate('(%s,%s)' % (xmax, np.round(ymax, 2)), xy=(xmax, ymax))
+        ax1.plot([1, xmax], [ymax, ymax], '--', color='grey')
+        ax1.plot([xmax, xmax], [0, ymax], '--', color='grey')
+
+        ax2.plot(np.arange(1, len(trloss[sbj]) + 1), trloss[sbj], label='train loss')
+        ax2.plot(np.arange(1, len(tsloss[sbj]) + 1), tsloss[sbj], label='test loss')
+        xmin = np.argmin(tsloss[sbj])
+        ymin = tsloss[sbj][xmin]
+        xmin += 1  # Epoch numbers begin with 1
+        ax2.plot(xmin, ymin, 'ro')
+        ax2.annotate('(%s,%s)' % (xmin, np.round(ymin, 2)), xy=(xmin, ymin))
+        ax2.plot([1, xmin], [ymin, ymin], '--', color='grey')
+        ax2.plot([xmin, xmin], [0, ymin], '--', color='grey')
+        plt.legend()
+
+        fig.savefig(os.path.join(dir_plots, 'loss_auc%s.png' % sbj))
+        ax1.cla()
+        ax2.cla()
         fig.clf()
 
 
