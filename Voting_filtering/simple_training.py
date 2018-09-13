@@ -1,24 +1,20 @@
 """
 Training and testing baseline algorithm without data filtering with results logging:
 
-auc scores (aucs.csv and test_aucs.csv),
-predictions on test (test_predictions.csv),
-aggregating CV predictions on all folds (predictions.csv),
-#true labels for all the validation sets (true_labels.csv),
-true labels for the test set (test_true_labels.csv),
-indices for all the validation sets (indices.csv),
-indices for all the validation sets (test_indices.csv),
-deviations of the test predictions from the true labels (test_deviations.csv),
-test roc plots (roc/test_roc*),
-histograms of deviations (hist/*)
-
+auc scores on train and test dataset (aucs.csv and test_aucs.csv),
+predictions on test and train(test_predictions.csv, train_predictions.csv),
+true labels for test and train (test_true_labels.csv, train_true_labels.csv),
+indices for train and test (rain_indices.csv,test_indices.csv),
+deviations of train and test predictions from the true labels (train_deviations.csv, test_deviations.csv),
+train and test roc plots (roc/*),
+histograms of deviations (hist/*),
+train and test loss plots (loss/*),
+auc dynamics plots (aucs/*)
 """
 from src.utils import *
 from src.callbacks import LossMetricHistory
 from src.data import DataBuildClassifier
 from src.NN import get_model
-from sklearn.model_selection import StratifiedKFold
-from keras.utils import to_categorical
 from keras.models import load_model
 
 
@@ -27,9 +23,9 @@ sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
 path_to_data = '/home/likan_blk/BCI/NewData/'  #os.path.join(os.pardir,'sample_data')
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
-                                                  baseline_window=(0.2, 0.3))
+                                                  baseline_window=(0.2, 0.3),resample_to=250)
 # Some files for logging
-logdir = os.path.join(os.getcwd(),'logs', 'cf', 'simple_training_noSM','less_dropout')
+logdir = os.path.join(os.getcwd(),'logs', 'cf', 'simple_training_resample')
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
 

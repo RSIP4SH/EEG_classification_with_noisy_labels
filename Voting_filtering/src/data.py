@@ -5,7 +5,8 @@ import numpy as np
 import pickle
 from random import shuffle,seed
 #from StringIO import StringIO
-from scipy.signal import resample
+#from scipy.signal import resample
+from mne.filter import resample
 
 def to_onehot(labels):
     unique_labels = list(set(labels))
@@ -79,13 +80,21 @@ class DataBuildClassifier(Data):
         bl_end = int((baseline_window[1] - self.start_epoch) * self.sample_rate)
 
         return X[:,bl_start:bl_end,:].mean(axis=1)
-    def get_data(self,subjects,shuffle=True,windows=None,baseline_window=()):
+
+    def _resample(self, X, y, resample_to):
+        self.sample_rate = resample_to
+        duration = self.end_epoch - self.start_epoch
+        downsample_factor = X.shape[1] / (resample_to * duration)
+        return resample(X, up=1., down=downsample_factor, npad='auto', axis=1), y
+
+    def get_data(self,subjects,shuffle=True,windows=None,baseline_window=(),resample_to=None):
         '''
 
         :param subjects: list subject's numbers, wich data we want to load
         :param shuffle: bool
         :param windows: list of tuples. Each tuple contains two floats - start and end of window in seconds
-        :param baseline_window:
+        :param baseline_window: tuple of start time and end time of a baseline
+        :param resample_to: int, new sample rate
         :return: Dict. {Subject_number:tuple of 2 numpy arrays: data (Trials x Time x Channels) and labels}
         '''
         res={}
@@ -100,6 +109,10 @@ class DataBuildClassifier(Data):
                 X = X - baseline
             y = np.hstack((np.ones(eegT.shape[2]),np.zeros(eegNT.shape[2])))
             #y = np.hstack(np.repeat([[1,0]],eegT.shape[2],axis=0),np.repeat([[0,1]],eegT.shape[2],axis=0))
+
+            if (resample_to is not None) and (resample_to != self.sample_rate):
+                X, y = self._resample(X, y, resample_to)
+
             time_indices=[]
             if windows is not None:
                 for win_start,win_end in windows:
