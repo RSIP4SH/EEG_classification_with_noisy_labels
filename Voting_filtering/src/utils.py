@@ -6,6 +6,7 @@ import numpy as np
 import os
 import csv
 from sklearn.metrics import roc_curve, roc_auc_score
+from scipy.stats import wilcoxon
 
 # def loging(history,title):
 #     fig = plt.figure()
@@ -299,7 +300,7 @@ def plot_auc(fname, dir_plots, word=''):
         ax.set_ylabel('AUC')
         ax.plot(np.arange(1,len(aucs[sbj])+1), aucs[sbj])
         xmax = np.argmax(aucs[sbj])
-        ymax = aucs[sbj][xmax]
+        ymax = np.round(aucs[sbj][xmax],2)
         xmax += 1 # Epoch numbers begin with 1
         ax.plot(xmax, ymax, 'ro')
         ax.annotate('(%s,%s)'%(xmax,ymax), xy=(xmax, ymax))
@@ -413,6 +414,48 @@ def plot_loss_auc(fname_auc, fname_loss, fname_tloss, dir_plots):
         ax1.cla()
         ax2.cla()
         fig.clf()
+
+def ensemble(predictions_list, y_true, fname_preds, fname_dev, fname_auc):
+    y_pred = reduce(lambda a, b: np.hstack((a,b)), predictions_list)
+    y_pred = np.mean(y_pred, axis=1)
+    with open(fname_preds, 'a') as fout:
+        fout.write(','.join(map(str, list(y_pred))))
+        fout.write('\n')
+    with open(fname_dev, 'a') as fout:
+        fout.write(','.join(map(str, list(y_true - y_pred))))
+        fout.write('\n')
+    auc = roc_auc_score(y_true, y_pred)
+    with open(fname_auc, 'a') as fout:
+        fout.write('%s,'%auc)
+
+def mean_and_pvalue(file1, file2=None):
+    """
+    For auc files compute mean, std of aucs (over subjects) for both files and do the Wilcoxon signed-rank test.
+    :param file1: csv file with auc scores of the algorithm of interest in the following format:
+                                header
+                                sbj1, auc1_1, auc1_2, ..., auc1_n
+                                sbj2, auc2_1, auc2_2, ..., auc2_n
+                                ...
+                                sbjm, aucm_1, aucm_2, ..., aucm_n
+    :param file2: csv file with auc scores of the baseline algorithm to compare with (in the same format as file1)
+    :return: tuple of 3 numpy.ndarray pvalue[n], mean1[n], std1[n], mean2[n], std2[n]
+            or mean[n], std[n] if file2 is None
+    """
+    aucs1 = np.loadtxt(file1, delimiter=',', skiprows=1)[:,1:]
+
+    if not file2:
+        return aucs1.mean(0), aucs1.std(0)
+
+    aucs2 = np.loadtxt(file2, delimiter=',', skiprows=1)[:,1:]
+
+    assert aucs1.shape[1] == aucs2.shape[1],\
+            "Auc files are incompatible"
+
+    pval = []
+    for i in range(aucs1.shape[1]):
+        pval.append(wilcoxon(aucs1[i], aucs2[i])[1])
+
+    return np.array(pval), aucs1.mean(0), aucs1.std(0), aucs2.mean(0), aucs2.std(0)
 
 
 
