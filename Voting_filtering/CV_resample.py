@@ -2,6 +2,7 @@ from src.data import DataBuildClassifier
 from src.NN import get_model
 from src.callbacks import LossMetricHistory
 from sklearn.model_selection import train_test_split, StratifiedKFold
+from keras.utils import to_categorical
 from keras.models import load_model
 from src.utils import *
 from sklearn.metrics import roc_auc_score
@@ -12,9 +13,9 @@ sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38] #[33,34]
 path_to_data = os.path.join(os.pardir,'sample_data')
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
-                                                  baseline_window=(0.2, 0.3), resample_to=200)
+                                                  baseline_window=(0.2, 0.3), resample_to=323)
 # Some files for logging
-logdir = os.path.join(os.getcwd(),'logs', 'cf', 'CV_resampled', '200Hz')
+logdir = os.path.join(os.getcwd(),'logs', 'cf', 'CV_resampled', '323Hz')
 
 fname_tpreds = [os.path.join(logdir, 'test', 'predictions_ens.csv'),
                 os.path.join(logdir, 'test', 'predictions_mean_epoch.csv')]
@@ -108,7 +109,7 @@ with open(fname_cvauc, 'w') as fout:
     fout.write('subject,aucs\n')
 
 epochs = 150
-dropouts = (0.2, 0.4, 0.6)
+dropouts = (0.718002897971255, 0.32013533319134346, 0.058501026070547524) #(0.2, 0.4, 0.6)
 
 # Iterate over subjects
 for sbj in sbjs:
@@ -190,11 +191,11 @@ for sbj in sbjs:
             fout.write('%s,' % sbj)
 
         bestepochs = np.array([])
-        model, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
+        model = get_model(time_samples_num, channels_num, dropouts=dropouts)
         callback = LossMetricHistory(n_iter=epochs,
                                      verbose=1, fname_bestmodel=os.path.join(logdir, str(n), "model%s.hdf5" % (sbj)))
-        model.fit(X_tr, y_tr, epochs=epochs,
-                         validation_data=(X_val, y_val), callbacks=[callback],
+        model.fit(X_tr, to_categorical(y_tr), epochs=epochs,
+                         validation_data=(X_val, to_categorical(y_val)), callbacks=[callback],
                          batch_size=64, shuffle=True)
         bestepochs = np.append(bestepochs, callback.bestepoch + 1)
 
@@ -263,12 +264,12 @@ for sbj in sbjs:
     ensemble(y_pred_list, y_test, fname_tpreds[0], fname_tdev[0], fname_tauc)
 
     # Train and test the model with the mean number of epochs
-    model, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
+    model = get_model(time_samples_num, channels_num, dropouts=dropouts)
     callback = LossMetricHistory(n_iter=epochs,
                                  verbose=1, fname_lastmodel=os.path.join(logdir, "test", "last_model%s.hdf5" % (sbj)))
-    model.fit(X_train, y_train, epochs=bestepoch,
+    model.fit(X_train, to_categorical(y_train), epochs=bestepoch,
                      batch_size=64, shuffle=True)
-    y_pred_test = model.predict(X_test)[:, 0]
+    y_pred_test = model.predict(X_test)[:, 1] ### Why [:,0] was at first???
 
     with open(fname_tpreds[1], 'a') as fout:
         fout.write(','.join(map(str, list(y_pred_test))))
