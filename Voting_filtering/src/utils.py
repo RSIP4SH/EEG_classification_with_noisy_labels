@@ -438,6 +438,7 @@ def mean_and_pvalue(file1, file2=None):
                                 ...
                                 sbjm, aucm_1, aucm_2, ..., aucm_n
     :param file2: csv file with auc scores of the baseline algorithm to compare with (in the same format as file1)
+                if None than just mean and std of file1
     :return: tuple of 3 numpy.ndarray pvalue[n], mean1[n], std1[n], mean2[n], std2[n]
             or mean[n], std[n] if file2 is None
     """
