@@ -20,7 +20,7 @@ def get_model(time_samples_num,channels_num,dropouts):
     num_of_filt = 16
 
     input=Input(shape=(time_samples_num, channels_num, ))
-    convolved = Conv1D(num_of_filt,kernel_size=(1),activation='elu',padding='same',kernel_regularizer=l1_l2(0.0001))(input)
+    convolved = Conv1D(num_of_filt,kernel_size=(1),activation='elu',padding='same',kernel_regularizer=l1_l2(0.000001316294725932303))(input)
     convolved = Reshape((1, num_of_filt, time_samples_num))(convolved)
     #
     #
@@ -51,14 +51,14 @@ def get_model(time_samples_num,channels_num,dropouts):
 
     #Fourth
     flatten = Flatten()(dropouted)
-    out = Dense(1,activation='sigmoid')(flatten) #out = Dense(2,activation=None)(flatten)
+    out = Dense(2,activation=None)(flatten)
     #out = Activation(activation='softmax')(out)
     classification_model = Model(inputs=input,outputs=out)
-    opt = Adam(lr=0.005)
-    classification_model.compile(optimizer=opt,loss='binary_crossentropy',metrics=['accuracy'])
+    opt = Adam(lr=0.0009890479910491421)
+    classification_model.compile(optimizer=opt,loss='categorical_crossentropy',metrics=['accuracy'])
 
-    tsne_model = Model(inputs=input,outputs=flatten)
-    return classification_model, tsne_model
+    #tsne_model = Model(inputs=input,outputs=flatten)
+    return classification_model
 
 
 

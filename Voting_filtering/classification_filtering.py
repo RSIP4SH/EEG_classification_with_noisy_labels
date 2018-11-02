@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 import numpy as np
 from keras.utils import to_categorical
 from keras.models import load_model
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve
 import os
 
 
@@ -15,20 +15,20 @@ sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
 path_to_data = '/home/likan_blk/BCI/NewData/'  # os.path.join(os.pardir,'sample_data')
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
-                                                  baseline_window=(0.2, 0.3))
+                                                  baseline_window=(0.2, 0.3), resample_to=323)
 # Some files for logging
-logdir = os.path.join(os.getcwd(),'logs', 'cf')
+logdir = os.path.join(os.getcwd(),'logs', 'cf_threshold')
 if not os.path.isdir(logdir):
-    os.mkdir(logdir)
-fname = os.path.join(logdir, 'auc_scores_0.8.csv')
+    os.makedirs(logdir)
+fname = os.path.join(logdir, 'auc_scores.csv')
 with open(fname, 'w') as fout:
     fout.write('subject,auc_noisy,auc_pure,samples_before,samples_after,epoch_number\n')
-fname_err_ind = os.path.join(logdir, 'err_indices0.8.csv')
+fname_err_ind = os.path.join(logdir, 'err_indices.csv')
 with open(fname_err_ind, 'w') as fout:
     fout.write('subject,class,indices\n')
 
 epochs = 150
-dropouts = (0.2, 0.4, 0.6)
+dropouts = (0.718002897971255, 0.32013533319134346, 0.058501026070547524)
 
 # Iterate over subjects and clean label noise for all of them
 for sbj in sbjs:
@@ -59,7 +59,7 @@ for sbj in sbjs:
 
     for fold in fold_pairs:
         X_tr, y_tr, X_val, y_val = fold[0], to_categorical(fold[1]), fold[2], to_categorical(fold[3])
-        model, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
+        model = get_model(time_samples_num, channels_num, dropouts=dropouts)
         callback = LossMetricHistory(n_iter=epochs,verbose=1,
                                      fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(i)))
         hist = model.fit(X_tr, y_tr, epochs=epochs,
@@ -70,10 +70,17 @@ for sbj in sbjs:
         # Validation and data cleaning
         model = load_model(os.path.join(logdir, "model%s.hdf5"%(i)))
         y_pred = model.predict(X_val)[:,1]
+        # Choosing threshold (specificity should be at least 0.9)
+        FPR, TPR, thresholds = roc_curve(y_val[:,1], y_pred)
+        threshold = (thresholds[FPR <= 0.1]).min()
+
         # Indices of non-noisy samples
         for j, ind in enumerate(val_inds[i]):
-            if np.abs(y[ind] - y_pred[j]) < 0.8:
+            if y[ind] and y_pred[j] >= threshold or \
+                y[ind] == 0 and y_pred[j] < threshold:
                 pure_ind.append(ind)
+            #if np.abs(y[ind] - y_pred[j]) < 0.5: # It is useful only if threshold = 0.5
+            #    pure_ind.append(ind)
             # OPTIONALLY: let's save indices of erroneous samples for each class separately
             # in order to look at this data after all.
             elif y[ind] == 1:
@@ -107,7 +114,7 @@ for sbj in sbjs:
     y_train = to_categorical(y_train)
     y_train_pure = to_categorical(y_train_pure)
 
-    model_noisy, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
+    model_noisy = get_model(time_samples_num, channels_num, dropouts=dropouts)
     model_noisy.fit(X_train, y_train, epochs=bestepoch,
                     batch_size=64, shuffle=False)
 
@@ -115,7 +122,7 @@ for sbj in sbjs:
     y_pred_noisy = y_pred_noisy[:,1]
     auc_noisy = roc_auc_score(y_test,y_pred_noisy)
 
-    model_pure, _ = get_model(time_samples_num, channels_num, dropouts=dropouts)
+    model_pure = get_model(time_samples_num, channels_num, dropouts=dropouts)
     model_pure.fit(X_train, y_train, epochs=bestepoch,
                    batch_size=64, shuffle=False)
     y_pred_pure = model_pure.predict(X_test)
