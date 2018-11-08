@@ -6,18 +6,25 @@ import numpy as np
 from keras.utils import to_categorical
 from keras.models import load_model
 from sklearn.metrics import roc_auc_score, roc_curve
-import os
+import os, sys
 
+if len(sys.argv) < 3:
+    print("Usage: \n"
+          "python classification_filtering.py path_to_data path_to_logs filtration_rate[0...0.5) \n"
+          "For example, if you want to discard 10% of data in each class \n"
+          "and then train the network again, use something like: \n"
+          "./classification_filtering.py ../Data ./logs/cf 0.1")
+    exit()
 
 
 # Data import and making train, test and validation sets
 sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
-path_to_data = '/home/likan_blk/BCI/NewData/'  # os.path.join(os.pardir,'sample_data')
+path_to_data = sys.argv[1] #'/home/likan_blk/BCI/NewData/'  # os.path.join(os.pardir,'sample_data')
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
                                                   windows=[(0.2, 0.5)],
                                                   baseline_window=(0.2, 0.3), resample_to=323)
 # Some files for logging
-logdir = os.path.join(os.getcwd(),'logs', 'cf_threshold')
+logdir = sys.argv[2]#os.path.join(os.getcwd(),'logs', 'cf_threshold')
 if not os.path.isdir(logdir):
     os.makedirs(logdir)
 fname = os.path.join(logdir, 'auc_scores.csv')
@@ -28,7 +35,9 @@ with open(fname_err_ind, 'w') as fout:
     fout.write('subject,class,indices\n')
 
 epochs = 150
-dropouts = (0.718002897971255, 0.32013533319134346, 0.058501026070547524)
+dropouts = (0.72,0.32,0.05)
+if len(sys.argv) > 3:
+    filt_rate = sys.argv[3]
 
 # Iterate over subjects and clean label noise for all of them
 for sbj in sbjs:
