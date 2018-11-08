@@ -36,8 +36,12 @@ with open(fname_err_ind, 'w') as fout:
 
 epochs = 150
 dropouts = (0.72,0.32,0.05)
+
 if len(sys.argv) > 3:
     filt_rate = sys.argv[3]
+else:
+    filt_rate = "all"
+
 
 # Iterate over subjects and clean label noise for all of them
 for sbj in sbjs:
@@ -59,15 +63,17 @@ for sbj in sbjs:
 
     # Getting and training models with cross-validation
     i = 0 # Fold number iterator
-    pure_ind = []
-    err_target_ind = []
-    err_nontarg_ind = []
+    pure_ind = np.array([], dtype=np.int32)
+    err_target_ind = np.array([], dtype=np.int32)
+    err_nontarg_ind = np.array([], dtype=np.int32)
     bestepochs = np.array([])
     time_samples_num = X_train.shape[1]
     channels_num = X_train.shape[2]
 
     for fold in fold_pairs:
         X_tr, y_tr, X_val, y_val = fold[0], to_categorical(fold[1]), fold[2], to_categorical(fold[3])
+        y_val_bin = fold[3]
+
         model = get_model(time_samples_num, channels_num, dropouts=dropouts)
         callback = LossMetricHistory(n_iter=epochs,verbose=1,
                                      fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(i)))
@@ -79,30 +85,51 @@ for sbj in sbjs:
         # Validation and data cleaning
         model = load_model(os.path.join(logdir, "model%s.hdf5"%(i)))
         y_pred = model.predict(X_val)[:,1]
+
         # Choosing threshold (specificity should be at least 0.9)
-        FPR, TPR, thresholds = roc_curve(y_val[:,1], y_pred)
+        FPR, TPR, thresholds = roc_curve(y_val_bin, y_pred)
         threshold = (thresholds[FPR <= 0.1]).min()
 
-        # Indices of non-noisy samples
-        for j, ind in enumerate(val_inds[i]):
-            if y[ind] and y_pred[j] >= threshold or \
-                y[ind] == 0 and y_pred[j] < threshold:
-                pure_ind.append(ind)
-            #if np.abs(y[ind] - y_pred[j]) < 0.5: # It is useful only if threshold = 0.5
-            #    pure_ind.append(ind)
-            # OPTIONALLY: let's save indices of erroneous samples for each class separately
-            # in order to look at this data after all.
-            elif y[ind] == 1:
-                err_target_ind.append(ind)
-            else:
-                err_nontarg_ind.append(ind)
-        #pure_ind += list(val_inds[i][np.abs(y_val[:,1] - y_pred) < 0.5])
+        if filt_rate != "all":
+            filt_rate = float(filt_rate)
+            ind = np.array(val_inds[i]) # indices of validation samples in the initial dataset
+            n_err1 = int(np.round(y_val_bin.sum()*filt_rate))  # Number of samples in target class to be thrown away
+            n_err0 = int(np.round((len(y_val_bin)-y_val_bin.sum())*filt_rate))  # Number of samples in nontarget class
+                                                                        # to be thrown away
+            argsort0 = np.argsort(y_pred[y_val_bin==0])[::-1]   # Descending sorting of predictions for nontarget class
+                                                            # so that the most erroneous sample are at the
+                                                            #begining of the array
+            argsort1 = np.argsort(y_pred[y_val_bin==1])     # Ascending Sorting of predictions for target class
+                                                        # so that the most erroneous sample are at the
+                                                        #begining of the array
+            target_ind = ind[y_val_bin==1][argsort1]
+            nontarg_ind = ind[y_val_bin==0][argsort0]
+            err_target_ind = np.append(err_target_ind, target_ind[:n_err1])
+            err_nontarg_ind = np.append(err_nontarg_ind, nontarg_ind[:n_err0]) # Take demanded amount of error samples
+            pure_ind = np.append(pure_ind, target_ind[n_err1:])
+            pure_ind = np.append(pure_ind, nontarg_ind[n_err0:])
+        else:
+            # Indices of non-noisy samples
+            for j, ind in enumerate(val_inds[i]):
+                if y[ind] and y_pred[j] >= threshold or \
+                    y[ind] == 0 and y_pred[j] < threshold:
+                    pure_ind = np.append(pure_ind, ind)
+                #if np.abs(y[ind] - y_pred[j]) < 0.5: # It is useful only if threshold = 0.5
+                #    pure_ind.append(ind)
+                # OPTIONALLY: let's save indices of erroneous samples for each class separately
+                # in order to look at this data after all.
+                elif y[ind] == 1:
+                    err_target_ind = np.append(err_target_ind, ind)
+                else:
+                    err_nontarg_ind = np.append(err_nontarg_ind, ind)
+            #pure_ind += list(val_inds[i][np.abs(y_val_bin - y_pred) < 0.5])
         i += 1 # Fold number
 
 
     bestepoch = int(round(bestepochs.mean()))
 
     # Removing instances with noisy labels
+    np.random.shuffle(pure_ind)
     X_train_pure = X[pure_ind]
     y_train_pure = y[pure_ind]
 
@@ -132,7 +159,7 @@ for sbj in sbjs:
     auc_noisy = roc_auc_score(y_test,y_pred_noisy)
 
     model_pure = get_model(time_samples_num, channels_num, dropouts=dropouts)
-    model_pure.fit(X_train, y_train, epochs=bestepoch,
+    model_pure.fit(X_train_pure, y_train_pure, epochs=bestepoch,
                    batch_size=64, shuffle=False)
     y_pred_pure = model_pure.predict(X_test)
     y_pred_pure = y_pred_pure[:,1]
