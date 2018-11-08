@@ -437,15 +437,19 @@ def mean_and_pvalue(file1, file2=None):
                                 sbj2, auc2_1, auc2_2, ..., auc2_n
                                 ...
                                 sbjm, aucm_1, aucm_2, ..., aucm_n
-    :param file2: csv file with auc scores of the baseline algorithm to compare with (in the same format as file1)
-                if None than just mean and std of file1
+    :param file2: csv file with auc scores of an algorithm to compare with (in the same format as file1)
+                if None than just mean, std offile1 columns and p-values of Wilcoxon signed-rank test of all
+                the columns of file1 comparing to auc*_1 column
     :return: tuple of 3 numpy.ndarray pvalue[n], mean1[n], std1[n], mean2[n], std2[n]
             or mean[n], std[n] if file2 is None
     """
     aucs1 = np.loadtxt(file1, delimiter=',', skiprows=1)[:,1:]
 
     if not file2:
-        return aucs1.mean(0), aucs1.std(0)
+        pval = []
+        for i in range(1,aucs1.shape[1]):
+            pval.append(wilcoxon(aucs1[0], aucs1[i])[1])
+        return aucs1.mean(0), aucs1.std(0), pval
 
     aucs2 = np.loadtxt(file2, delimiter=',', skiprows=1)[:,1:]
 
