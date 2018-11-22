@@ -1,0 +1,20 @@
+#!/bin/bash
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr5 0.05
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr10 0.1
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr15 0.15
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr20 0.2
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr25 0.25
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr30 0.3
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr35 0.35
+pyrhon Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr40 0.4
+python Voting_filtering/classification_filtering.py /home/likan_blk/BCI/NewData/ ./Voting_filtering/logs/cf_fr45 0.45
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr5/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr10/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr15/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr20/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr25/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr30/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr35/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr40/auc_scores.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_fr45/auc_scores.csv
+
