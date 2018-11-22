@@ -448,7 +448,7 @@ def mean_and_pvalue(file1, file2=None):
     if not file2:
         pval = []
         for i in range(1,aucs1.shape[1]):
-            pval.append(wilcoxon(aucs1[0], aucs1[i])[1])
+            pval.append(wilcoxon(aucs1[:,0], aucs1[:,i])[1])
         return aucs1.mean(0), aucs1.std(0), pval
 
     aucs2 = np.loadtxt(file2, delimiter=',', skiprows=1)[:,1:]
@@ -458,9 +458,9 @@ def mean_and_pvalue(file1, file2=None):
 
     pval = []
     for i in range(aucs1.shape[1]):
-        pval.append(wilcoxon(aucs1[i], aucs2[i])[1])
+        pval.append(wilcoxon(aucs1[:,i], aucs2[:,i])[1])
 
-    return np.array(pval), aucs1.mean(0), aucs1.std(0), aucs2.mean(0), aucs2.std(0)
+    return aucs1.mean(0), aucs1.std(0), aucs2.mean(0), aucs2.std(0), np.array(pval)
 
 
 
