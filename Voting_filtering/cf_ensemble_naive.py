@@ -1,18 +1,25 @@
+random_state = 108
+import random
+random.seed(random_state)
+import numpy as np
+np.random.seed(random_state)
+import tensorflow as tf
+tf.set_random_seed(random_state)
+
 from src.data import DataBuildClassifier
 from src.NN import get_model
 from src.callbacks import LossMetricHistory
 from sklearn.model_selection import train_test_split, StratifiedKFold
-import numpy as np
+
+import sys
 from keras.utils import to_categorical
 from keras.models import load_model
 from sklearn.metrics import roc_auc_score
 import os
-import sys
-
-
 if len(sys.argv) < 4:
     print("Usage: \n"
-          "python %s path_to_data path_to_logs filtration_rate[0...0.5) \n"%sys.argv[0],
+          "python %s path_to_data path_to_logs filtration_rate[0...0.5)"%sys.argv[0],
+          "[compute_noisy_ens (0 or 1, default 1)] [compute_noisy_naive (0 or 1, default 1)]\n"
           "For example, if you want to discard 10% of data in each class \n"
           "and then train the network again, use something like: \n"
           "%s ../Data ./logs/cf 0.1"%sys.argv[0])
@@ -37,8 +44,8 @@ with open(os.path.join(logdir, 'err_ind_naive.csv'), 'w') as fout:
 
 epochs = 150
 dropouts = (0.72,0.32,0.05)
+nfold = 4
 
-random_state=42
 path_to_data = sys.argv[1] # '/home/likan_blk/BCI/NewData/'
 sbjs = [25,26,27,28,29,30,32,33,34,35,36,37,38]
 data = DataBuildClassifier(path_to_data).get_data(sbjs, shuffle=False,
@@ -51,10 +58,13 @@ test_aucs_naive = []
 test_aucs_ensemble = []
 
 for sbj in sbjs:
+    np.random.seed(random_state)
+    tf.set_random_seed(random_state)
+
     X, y = data[sbj][0], data[sbj][1]
     train_ind, test_ind = train_test_split(np.arange(len(y)), shuffle=True,
                                            test_size=0.2, stratify=y,
-                                           random_state=108)
+                                           random_state=random_state)
     X_train, y_train, X_test, y_test = X[train_ind], y[train_ind], X[test_ind], y[test_ind]
     val_inds = []
     fold_pairs = []
@@ -63,9 +73,9 @@ for sbj in sbjs:
         X_tr, X_val = X_train[tr_ind], X_train[val_ind]
         y_tr, y_val = y_train[tr_ind], y_train[val_ind]
         fold_pairs.append((X_tr, y_tr, X_val, y_val))
-        val_inds.append(train_ind[val_ind]) # indices of all the validation instances in the initial X array
+        val_inds.append(train_ind[val_ind])  # indices of all the validation instances in the initial X array
 
-    nfold = 0
+
     bestepochs = np.array([])
     time_samples_num = X_train.shape[1]
     channels_num = X_train.shape[2]
@@ -75,19 +85,22 @@ for sbj in sbjs:
         X_tr, y_tr, X_val, y_val = fold[0], to_categorical(fold[1]), fold[2], to_categorical(fold[3])
         y_val_bin = fold[3]
 
+        np.random.seed(random_state)
+        tf.set_random_seed(random_state)
+
         model = get_model(time_samples_num, channels_num, dropouts=dropouts)
         callback = LossMetricHistory(n_iter=epochs,verbose=1,
                                      fname_bestmodel=os.path.join(logdir,"model%s.hdf5"%(nfold)))
         hist = model.fit(X_tr, y_tr, epochs=epochs,
                         validation_data=(X_val, y_val), callbacks=[callback],
-                        batch_size=64, shuffle=True)
+                        batch_size=64, shuffle=False)
         bestepochs = np.append(bestepochs, callback.bestepoch+1)
 
         # Validation and data cleaning
         model = load_model(os.path.join(logdir, "model%s.hdf5"%(nfold)))
         y_pred += model.predict(X_train)[:,1]   #  ensemble predictions
         y_pred_test += model.predict(X_test)[:,1]
-        nfold += 1  # Fold number
+
     bestepoch = int(round(bestepochs.mean()))
 
     # Data cleaning
@@ -100,6 +113,9 @@ for sbj in sbjs:
     #######################################
     ########### Ensemble model ############
     #######################################
+    np.random.seed(random_state)
+    tf.set_random_seed(random_state)
+
     y_pred /= nfold
     pure_ind = np.array([], dtype=np.int32)
     err_nontarg_ind = np.array([], dtype=np.int32)
@@ -136,23 +152,25 @@ for sbj in sbjs:
 
     # Train ensemble model on pure data
     y_train_pure = to_categorical(y_train_pure)
-    model_pure = get_model(time_samples_num, channels_num, dropouts=dropouts)
-    cv = StratifiedKFold(n_splits=nfold, shuffle=True)
+
+    cv = StratifiedKFold(n_splits=nfold, shuffle=False)
     fold_pairs_pure = []
     y_pred_pure = 0
-    nfold=0
-    for tr_ind, val_ind in cv.split(X_train_pure, y_train_pure[:,1]):
+    for fold, (tr_ind, val_ind) in enumerate(cv.split(X_train_pure, y_train_pure[:,1])):
         X_tr, X_val = X_train_pure[tr_ind], X_train_pure[val_ind]
         y_tr, y_val = y_train_pure[tr_ind], y_train_pure[val_ind]
         fold_pairs_pure.append((X_tr, y_tr, X_val, y_val))
         callback = LossMetricHistory(n_iter=epochs, verbose=1,
                                      fname_bestmodel=os.path.join(logdir, "model%s_ens_pure.hdf5" % (nfold)))
+        np.random.seed(random_state)
+        tf.set_random_seed(random_state)
+        model_pure = get_model(time_samples_num, channels_num, dropouts=dropouts)
         model_pure.fit(X_tr, y_tr, epochs=epochs,
                        validation_data=(X_val, y_val), callbacks=[callback],
-                       batch_size=64, shuffle=True)
+                       batch_size=64, shuffle=False)
         model_pure = load_model(os.path.join(logdir, "model%s_ens_pure.hdf5" % (nfold)))
         y_pred_pure += model_pure.predict(X_test)[:, 1]
-        nfold += 1
+
     y_pred_pure /= nfold
 
     # Compare to old (noisy) ensemble model
@@ -165,16 +183,24 @@ for sbj in sbjs:
     #######################################
     ###### Mean-epoch (naive) model #######
     #######################################
+    np.random.seed(random_state)
+    tf.set_random_seed(random_state)
+
     pure_ind = np.array([], dtype=np.int32)
     err_nontarg_ind = np.array([], dtype=np.int32)
     err_target_ind = np.array([], dtype=np.int32)
+
+    np.random.seed(random_state)
+    tf.set_random_seed(random_state)
+
+    model = get_model(time_samples_num, channels_num, dropouts=dropouts)
     model.fit(X_train, to_categorical(y_train), epochs=bestepoch, batch_size=64)
     y_pred = model.predict(X_train)[:, 1]
     argsort0 = np.argsort(y_pred[y_train == 0])[::-1]   # Descending sorting of predictions for nontarget class
                                                         # so that the most erroneous sample are at the
                                                         # beginning of the array
     argsort1 = np.argsort(y_pred[y_train == 1])     # Ascending Sorting of predictions for target class
-                                                    # so that the most erroneous sample are at the
+                                                    # so that the most erroneous sample are at th
                                                     # beginning of the array
     target_ind = train_ind[y_train == 1][argsort1]
     nontarg_ind = train_ind[y_train == 0][argsort0]
@@ -201,24 +227,30 @@ for sbj in sbjs:
 
     # Train naive model on pure data
     y_train_pure = to_categorical(y_train_pure)
-    model_pure = get_model(time_samples_num, channels_num, dropouts=dropouts)
 
-    cv = StratifiedKFold(n_splits=nfold, shuffle=True)
+    cv = StratifiedKFold(n_splits=nfold, shuffle=False)
     fold_pairs_pure = []
     y_pred_pure = 0
     bestepochs = np.array([])
 
-    for tr_ind, val_ind in cv.split(X_train_pure, y_train_pure[:,1]):
+    for fold, (tr_ind, val_ind) in enumerate(cv.split(X_train_pure, y_train_pure[:,1])):
         X_tr, X_val = X_train_pure[tr_ind], X_train_pure[val_ind]
         y_tr, y_val = y_train_pure[tr_ind], y_train_pure[val_ind]
-        callback = LossMetricHistory(n_iter=epochs, verbose=1,
-                                     fname_bestmodel=os.path.join(logdir, "model%s_naive_pure.hdf5" % (nfold)))
+        callback = LossMetricHistory(n_iter=epochs, verbose=1)
+                                     #fname_bestmodel=os.path.join(logdir, "model%s_naive_pure.hdf5" % (fold)))
+        np.random.seed(random_state)
+        tf.set_random_seed(random_state)
+        model_pure = get_model(time_samples_num, channels_num, dropouts=dropouts)
         model_pure.fit(X_tr, y_tr, epochs=epochs,
                        validation_data=(X_val, y_val), callbacks=[callback],
                        batch_size=64)
         bestepochs = np.append(bestepochs, callback.bestepoch + 1)
     bestepoch = int(round(bestepochs.mean()))
 
+    np.random.seed(random_state)
+    tf.set_random_seed(random_state)
+
+    model_pure = get_model(time_samples_num, channels_num, dropouts=dropouts)
     model_pure.fit(X_train_pure, y_train_pure, epochs=bestepoch, batch_size=64)
     y_pred_pure = model_pure.predict(X_test)[:, 1]
 

@@ -1,25 +1,25 @@
 #!/bin/bash
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr5 0.05
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr10 0.1
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr15 0.15
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr20 0.2
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr25 0.25
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr30 0.3
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr35 0.35
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
-python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_fr40 0.4
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_ens.csv
-python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_fr0.05/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr5 0.05
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr5/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr5/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr10 0.1
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr10/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr10/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr15 0.15
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr15/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr15/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr20 0.2
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr20/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr20/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr25 0.25
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr25/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr25/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr30 0.3
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr30/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr30/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr35 0.35
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr35/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr35/auc_scores_naive.csv
+python Voting_filtering/cf_ensemble_naive.py /home/likan_blk/BCI/NewData/ Voting_filtering/logs/cf_ensemble_naive_seed_fr40 0.4
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr40/auc_scores_ens.csv
+python Voting_filtering/pmean.py Voting_filtering/logs/cf_ensemble_naive_seed_fr40/auc_scores_naive.csv
