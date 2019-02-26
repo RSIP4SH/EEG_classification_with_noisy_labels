@@ -37,7 +37,7 @@ def kernel(x):
     pass
     return gram(x)
 
-def toRKHS(x): # Phi
+def phi(x): # Phi
     return x
 
 def jointFeatureMap(x, phi, n_states): # Psy
